@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/BudjakovDmitry/go_todo_app"
+	"github.com/BudjakovDmitry/go_todo_app/validators"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,16 +16,31 @@ func (h *Handler) signUp(c *gin.Context) {
 		return
 	}
 
-	id, err := h.services.CreateUser(input)
+	id, err := h.services.Authorization.CreateUser(input)
 	if err != nil {
 		newErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, map[string]interface{}{"id": id})
+	c.JSON(http.StatusOK, map[string]int{"id": id})
 
 }
 
 func (h *Handler) signIn(c *gin.Context) {
+	var input validators.SignInRequest
 
+	if err := c.BindJSON(&input); err != nil {
+		newErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	token, err := h.services.Authorization.GenerateToken(
+		input.Username, input.Password,
+	)
+	if err != nil {
+		newErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, map[string]string{"token": token})
 }
